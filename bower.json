@@ -1,0 +1,22 @@
+{
+  "name": "jammer",
+  "description": "Make music with friends",
+  "main": "app.js",
+  "authors": [
+    "chris.ngan24"
+  ],
+  "license": "ISC",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~3.1.1",
+    "socket.io": "^1.7.2"
+  }
+}
