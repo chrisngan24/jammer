@@ -5,23 +5,25 @@ var app = express();
 var server = require('http').createServer(app);  
 var io = require('socket.io')(server);
 
+
+//project files
+var JamSession = require('./JamSession');
+
 app.use(express.static(__dirname + '/bower_components'));  
 app.use(express.static(__dirname + '/static'));  
+app.use(express.static(__dirname + '/'));  
 
-//app.listen(80);
-//
-//app.get('/', function (req, res) {
-//    res.sendfile(__dirname + '/index.html');
-//});
-//
-//
-var socketMap = {};
+// global params
+// how frequent each sound frame is emmited to clients
+var milliseconds = 500;
 
-function onSocketConnection(roomId) {
-};
+// global objects
+var SESSION_MAP = {};
+var ROOM_INTERVALS = {};
+
 
 var generateRoom = function() {
-  var result = "";
+  var result = '';
   var n = 4;
   for (var i = 0; i < n; i++){
     result += Math.floor(Math.random()*10).toString();
@@ -34,18 +36,72 @@ app.get('/', function(req, res,next) {
   res.sendFile(__dirname + '/index.html');
 });
 
-var roomId = '123';
 io.sockets.on('connection', function (socket) {
-  console.log("connected");
-  socket.join(roomId);
-  io.to(roomId).emit('played', { msg : 'sup' });
+  // get room Id from client *HACKY*
+  var roomId = (socket.handshake.query.roomId);
+  console.log('User trying to join room ' + roomId);
+  if (roomId in SESSION_MAP){
+    // check if the room is legit
+    console.log('\tUser joined room ' + roomId);
+    socket.join(roomId);
+    SESSION_MAP[roomId].players += 1;
+    io.to(roomId).emit('playerJoin', { msg : 'sup' });
+    if (SESSION_MAP[roomId].players == 1 && SESSION_MAP[roomId].sessionPaused()) {
+      startRoom(roomId);
+    }
+  } else {
+    console.log('\t Room ' + roomId + ' is not a legit room');
+  }
+  socket.on('disconnect', function(){
+    console.log('User disconnecte from room ' + roomId);
+    if (SESSION_MAP[roomId] != undefined){
+      SESSION_MAP[roomId].players -= 1;
+      if (SESSION_MAP[roomId].isEmpty() && !SESSION_MAP[roomId].sessionPaused()){
+        pauseRoom(roomId);
+      }
+    }
+  });
 });
+
+io.sockets.on
+
+
+
+// Start the jam session
+
+function createRoom(roomId) {
+  SESSION_MAP[roomId] = new JamSession(roomId);
   
+  return true;
+};
 
-app.get('/jam_session/:roomId', function(req, res, next) {
-  var roomId = req.params.roomId;
-});
+function startRoom(roomId){
+  SESSION_MAP[roomId].interval = setInterval(
+    function(){ 
+      SESSION_MAP[roomId].timer += milliseconds;
+      emitRoomId(roomId);
+    }, 
+    milliseconds
+  );
+  SESSION_MAP[roomId].paused = false;
+  console.log('\t Room ' + roomId + ' is started');
+};
+function pauseRoom(roomId) {
+  console.log('Pausing room ' + roomId);
+  SESSION_MAP[roomId].timer = 0;
+  clearInterval(SESSION_MAP[roomId].interval);
+  SESSION_MAP[roomId].paused = true;
+};
 
-server.listen(3000, function () {
-  console.log('Example app listening on port 3000!')
+// emit frame session to clients
+function emitRoomId(roomId){
+  io.to(roomId).emit('soundFrame', SESSION_MAP[roomId].toJson());
+};
+
+// hardcode a room for testing
+createRoom('123');
+
+
+server.listen(3001, function () {
+  console.log('Example app listening on port 3001!')
 });
