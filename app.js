@@ -15,7 +15,7 @@ app.use(express.static(__dirname + '/'));
 
 // global params
 // how frequent each sound frame is emmited to clients
-var milliseconds = 500;
+var milliseconds = 50;
 
 // global objects
 var SESSION_MAP = {};
@@ -49,6 +49,10 @@ io.sockets.on('connection', function (socket) {
     if (SESSION_MAP[roomId].players == 1 && SESSION_MAP[roomId].sessionPaused()) {
       startRoom(roomId);
     }
+    socket.on('playedNotes', function(note){
+      console.log(note);
+      SESSION_MAP[roomId].addNote(note['note'], note['octave']);
+    });
   } else {
     console.log('\t Room ' + roomId + ' is not a legit room');
   }
@@ -63,7 +67,6 @@ io.sockets.on('connection', function (socket) {
   });
 });
 
-io.sockets.on
 
 
 
@@ -78,6 +81,7 @@ function createRoom(roomId) {
 function startRoom(roomId){
   SESSION_MAP[roomId].interval = setInterval(
     function(){ 
+
       SESSION_MAP[roomId].timer += milliseconds;
       emitRoomId(roomId);
     }, 
@@ -96,6 +100,7 @@ function pauseRoom(roomId) {
 // emit frame session to clients
 function emitRoomId(roomId){
   io.to(roomId).emit('soundFrame', SESSION_MAP[roomId].toJson());
+  SESSION_MAP[roomId].emptyFrame();
 };
 
 // hardcode a room for testing

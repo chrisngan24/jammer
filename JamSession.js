@@ -4,6 +4,7 @@ function JamSession(id) {
   this.players = 0;
   // defaults to paused
   this.paused=true;
+  this.notes = [];
 }
 JamSession.prototype.isEmpty = function(){
   return this.players == 0;
@@ -15,18 +16,36 @@ JamSession.prototype.toJson = function(){
     id : this.id,
     timer : this.timer,
     players : this.players,
-    paused: this.paused
+    paused: this.paused,
+    notes: this.notes
   }
+};
+
+JamSession.prototype.playFrame = function(instrument){
+  this.notes.forEach(function(note){
+    instrument.play(note['note'], note['octave'],2);
+  });
+};
+
+JamSession.prototype.emptyFrame = function(instrument){
+  this.notes = [];
 };
 
 JamSession.prototype.sessionPaused = function(){
   return this.paused
 };
 
+JamSession.prototype.addNote = function(note, octave){
+  this.notes.push({note: note, octave: octave});
+};
+
 // deserialize
 JamSession.fromJson = function(json){
   var j = new JamSession(json.id);
   j.timer = json.timer;
+  j.players = json.players;
+  j.paused = json.paused;
+  j.notes = json.notes;
   return j;
 };
 
